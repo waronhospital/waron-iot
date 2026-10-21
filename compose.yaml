@@ -32,19 +32,21 @@ services:
     entrypoint: ["nginx", "-g", "daemon off;"]
     restart: unless-stopped
     ports:
-      - "${WARON_DATA_PORT:-8081}:8080"
+      - "${WARON_DATA_PORT:-8081}:80"
     volumes:
-      - telemetry:/srv/data:ro
+      - telemetry:/usr/share/nginx/html:ro
       - ./docker/data-browser.conf:/etc/nginx/nginx.conf:ro
     read_only: true
     tmpfs:
       - /tmp:size=16m,mode=1777
     cap_drop:
       - ALL
+    sysctls:
+      net.ipv4.ip_unprivileged_port_start: "0"
     security_opt:
       - no-new-privileges:true
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:8080/"]
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:80/"]
       interval: 30s
       timeout: 5s
       retries: 3

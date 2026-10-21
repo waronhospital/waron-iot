@@ -100,7 +100,7 @@ Compose menyediakan service `data-browser` pada `http://localhost:8081/` atau `h
 
 Layanan ini tanpa login dan hanya-baca. Folder yang dibuka adalah `/app/data/telemetry` milik backend (volume sama), bukan seluruh data internal. State, lock, dan berkas setup tidak memiliki rute akses. Waktu daftar file Nginx mengikuti UTC; timestamp di dalam JSON mengikuti format data aplikasi. Sebelum laporan pertama, folder telemetry mungkin belum ada sehingga browser memberi 404; kirim telemetri atau impor riwayat dahulu.
 
-Jika storage backend diganti ke bind mount `./data:/app/data`, ganti juga mount data-browser menjadi `./data:/srv/data:ro` agar kedua layanan membaca data sama. Jangan memakai volume berbeda.
+Jika storage backend diganti ke bind mount `./data:/app/data`, ganti juga mount data-browser menjadi `./data:/usr/share/nginx/html:ro` agar kedua layanan membaca data sama. Jangan memakai volume berbeda.
 
 Docker/Nginx tidak tersedia di lingkungan implementasi; konfigurasi perlu diverifikasi dengan `docker compose config` dan akses browser pada host Docker. Contoh pemeriksaan: `curl -I http://localhost:8081/` dan pastikan `curl -I http://localhost:8081/state.json` menghasilkan 404. Akses langsung tanpa login ini ditujukan bagi pihak yang bisa menjangkau port; isi telemetri memuat informasi jaringan seperti IP dan SSID.
 
@@ -125,3 +125,7 @@ docker compose cp ./devices.docker.json waron-iot:/app/config/devices.json
 ```
 
 Untuk backup, salin konfigurasi dengan `docker compose cp waron-iot:/app/config/devices.json ./backups/devices.json` selain backup volume telemetri. Volume lama tidak ditimpa template ketika image dibangun ulang. `docker compose down -v` menghapus kedua volume, termasuk konfigurasi.
+
+Volume browser data dipasang ke `/usr/share/nginx/html`, direktori web bawaan image Nginx resmi. Root listing diarahkan ke subfolder `telemetry` agar state dan kunci tidak ikut terbuka. Konfigurasi Nginx tetap diperlukan untuk autoindex dan port internal 80.
+
+Service browser memakai port internal 80, diteruskan ke port host 8081 secara default. Sysctl `net.ipv4.ip_unprivileged_port_start=0` dalam namespace container memungkinkan UID 10001 bind port 80 tanpa menambah capability. Untuk port host 80 juga, set `WARON_DATA_PORT=80` di `.env` dan pastikan port host tersebut kosong.
