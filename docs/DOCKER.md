@@ -4,18 +4,19 @@ Prasyarat: Docker Engine/Desktop dan Docker Compose v2. Jalankan semua perintah 
 
 ## Mulai
 
-Jika `config/devices.json` belum ada, salin template lalu sesuaikan ID, kunci, gedung, lantai dan fitur:
-
-```sh
-cp config/devices.example.json config/devices.json
-```
-
-Jangan menimpa file konfigurasi yang sudah dipakai. Simpan file sebelum menjalankan container. Jalankan:
+Jalankan:
 
 ```sh
 docker compose up -d --build
 docker compose ps
 docker compose logs --tail=50 -f
+```
+
+Volume konfigurasi baru otomatis diisi template. Jika sudah mempunyai `config/devices.json` yang benar, salin ke volume:
+
+```sh
+docker compose cp config/devices.json waron-iot:/app/config/devices.json
+docker compose exec waron-iot python server.py --check-config
 ```
 
 Dashboard: `http://localhost:8000`. Dari komputer/ESP lain gunakan IP LAN host Docker, misalnya `http://192.168.0.52:8000`. Masukkan alamat tersebut sebagai backend ESP; jangan memakai `localhost`, nama service Docker, atau IP internal container pada ESP. Izinkan akses port pada firewall host.
@@ -30,10 +31,10 @@ Gunakan port yang sama setiap menjalankan Compose; lebih mudah simpan `WARON_POR
 
 ## Konfigurasi dan penyimpanan
 
-- Seluruh direktori `config/` dipasang read-only. Perubahan `devices.json` dibaca backend saat permintaan API berikutnya; refresh dashboard. Mount direktori mempertahankan perubahan dari editor yang menyimpan dengan mengganti file secara atomik.
+- Konfigurasi memakai named volume `device-config`. Pada volume baru, Docker menyalin template `devices.json` dari image. Perubahan konfigurasi dibaca saat permintaan API berikutnya; refresh dashboard.
 - Telemetri, `state.json`, kunci hash dan lock tersimpan di named volume `telemetry`, bukan di image. Compose memberi prefix nama proyek pada volume.
-- Image tidak menyertakan `config/devices.json`, `.env`, firmware, atau riwayat lokal `data/`.
-- Container berjalan sebagai UID/GID 10001, filesystem aplikasi read-only. `/app/data` dan `/tmp` tetap dapat ditulis.
+- Image hanya menyertakan template konfigurasi, bukan `config/devices.json` lokal, `.env`, firmware, atau riwayat lokal `data/`.
+- Container berjalan sebagai UID/GID 10001, filesystem aplikasi read-only. `/app/data`, `/app/config`, dan `/tmp` tetap dapat ditulis.
 - Timezone Asia/Jakarta; file harian mengikuti WIB.
 - Healthcheck menguji HTTP backend, bukan akses internet ESP atau keberhasilan tulis storage.
 - `restart: unless-stopped` memulai ulang saat proses berhenti; status unhealthy sendiri tidak otomatis me-restart container.
@@ -102,3 +103,25 @@ Layanan ini tanpa login dan hanya-baca. Folder yang dibuka adalah `/app/data/tel
 Jika storage backend diganti ke bind mount `./data:/app/data`, ganti juga mount data-browser menjadi `./data:/srv/data:ro` agar kedua layanan membaca data sama. Jangan memakai volume berbeda.
 
 Docker/Nginx tidak tersedia di lingkungan implementasi; konfigurasi perlu diverifikasi dengan `docker compose config` dan akses browser pada host Docker. Contoh pemeriksaan: `curl -I http://localhost:8081/` dan pastikan `curl -I http://localhost:8081/state.json` menghasilkan 404. Akses langsung tanpa login ini ditujukan bagi pihak yang bisa menjangkau port; isi telemetri memuat informasi jaringan seperti IP dan SSID.
+
+## Volume konfigurasi
+
+Compose memakai dua named volume: `device-config` untuk `/app/config`, dan `telemetry` untuk `/app/data`. Folder host `config/` tidak lagi di-mount. Volume baru diisi otomatis dengan template saat container dibuat; ID/kunci template perlu disesuaikan sebelum ESP dapat mengirim.
+
+Untuk memakai konfigurasi lokal yang sudah benar:
+
+```sh
+docker compose up -d --build
+docker compose cp config/devices.json waron-iot:/app/config/devices.json
+docker compose exec waron-iot python server.py --check-config
+```
+
+Jangan salin konfigurasi lokal lagi jika konfigurasi volume sudah diedit dan ingin dipertahankan. Untuk mengedit via host: ekspor, edit file hasil ekspor, lalu salin kembali:
+
+```sh
+docker compose cp waron-iot:/app/config/devices.json ./devices.docker.json
+# Edit devices.docker.json, kemudian:
+docker compose cp ./devices.docker.json waron-iot:/app/config/devices.json
+```
+
+Untuk backup, salin konfigurasi dengan `docker compose cp waron-iot:/app/config/devices.json ./backups/devices.json` selain backup volume telemetri. Volume lama tidak ditimpa template ketika image dibangun ulang. `docker compose down -v` menghapus kedua volume, termasuk konfigurasi.

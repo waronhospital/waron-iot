@@ -9,3 +9,5 @@ esp32-temperature/config.h
 
 .env
 backups/
+
+devices.docker.json

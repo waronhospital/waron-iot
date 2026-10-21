@@ -17,13 +17,14 @@ COPY index.html device.html temperature.html temperature-device.html logo.png ./
 COPY assets/ ./assets/
 COPY docs/ ./docs/
 COPY config/devices.example.json ./config/devices.example.json
+RUN cp /app/config/devices.example.json /app/config/devices.json
 RUN chmod 755 /usr/local/bin/waron-entrypoint \
     && mkdir -p /app/data \
-    && chown waron:waron /app/data
+    && chown -R waron:waron /app/data /app/config
 
 USER waron
 EXPOSE 8000
-VOLUME ["/app/data"]
+VOLUME ["/app/data", "/app/config"]
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/probe', timeout=3).read()"
 ENTRYPOINT ["/usr/local/bin/waron-entrypoint"]

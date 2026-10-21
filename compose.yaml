@@ -11,10 +11,7 @@ services:
       NETPULSE_READ_TOKEN: "${NETPULSE_READ_TOKEN:-}"
       NETPULSE_CORS_ORIGINS: "${NETPULSE_CORS_ORIGINS:-}"
     volumes:
-      - type: bind
-        source: ./config
-        target: /app/config
-        read_only: true
+      - device-config:/app/config
       - telemetry:/app/data
     read_only: true
     tmpfs:
@@ -59,3 +56,4 @@ services:
 
 volumes:
   telemetry:
+  device-config:
