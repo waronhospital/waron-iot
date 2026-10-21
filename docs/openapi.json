@@ -1,0 +1,843 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "WARON IoT API",
+    "version": "1.0.0",
+    "description": "ReadToken wajib hanya bila NETPULSE_READ_TOKEN dikonfigurasi. Dashboard LAN tetap terbuka. Lihat docs/API.md untuk semantik dan contoh respons."
+  },
+  "servers": [
+    {
+      "url": "/"
+    }
+  ],
+  "paths": {
+    "/api/v1/devices": {
+      "get": {
+        "summary": "Daftar perangkat dan kualitas internet",
+        "security": [
+          {
+            "ReadToken": []
+          },
+          {}
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON data"
+          },
+          "401": {
+            "description": "Token salah"
+          },
+          "404": {
+            "description": "Tidak ditemukan"
+          }
+        }
+      }
+    },
+    "/api/v1/devices/{device_id}/latest": {
+      "get": {
+        "summary": "Status terbaru perangkat",
+        "security": [
+          {
+            "ReadToken": []
+          },
+          {}
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON data"
+          },
+          "401": {
+            "description": "Token salah"
+          },
+          "404": {
+            "description": "Tidak ditemukan"
+          }
+        },
+        "parameters": [
+          {
+            "name": "device_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/devices/{device_id}/history": {
+      "get": {
+        "summary": "Riwayat dengan cursor",
+        "security": [
+          {
+            "ReadToken": []
+          },
+          {}
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON data"
+          },
+          "401": {
+            "description": "Token salah"
+          },
+          "404": {
+            "description": "Tidak ditemukan"
+          },
+          "400": {
+            "description": "Query tidak valid"
+          }
+        },
+        "parameters": [
+          {
+            "name": "device_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "after_id",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000,
+              "default": 100
+            }
+          }
+        ]
+      }
+    },
+    "/api/telemetry": {
+      "post": {
+        "summary": "Pengiriman telemetri Wemos",
+        "security": [
+          {
+            "DeviceId": [],
+            "DeviceKey": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "rssi"
+                ],
+                "properties": {
+                  "rssi": {
+                    "type": "integer",
+                    "minimum": -120,
+                    "maximum": 0
+                  },
+                  "local_ms": {
+                    "type": "number",
+                    "nullable": true,
+                    "minimum": 0,
+                    "maximum": 120000
+                  },
+                  "internet_ok": {
+                    "type": "boolean",
+                    "nullable": true
+                  },
+                  "internet_ms": {
+                    "type": "number",
+                    "nullable": true,
+                    "minimum": 0,
+                    "maximum": 120000
+                  },
+                  "firmware_version": {
+                    "type": "string"
+                  },
+                  "boot_id": {
+                    "type": "string"
+                  },
+                  "sequence": {
+                    "type": "integer"
+                  },
+                  "wifi": {
+                    "type": "object",
+                    "properties": {
+                      "ssid": {
+                        "type": "string"
+                      },
+                      "bssid": {
+                        "type": "string"
+                      },
+                      "channel": {
+                        "type": "integer"
+                      },
+                      "ip": {
+                        "type": "string"
+                      },
+                      "gateway": {
+                        "type": "string"
+                      },
+                      "dns": {
+                        "type": "string"
+                      },
+                      "disconnect_count": {
+                        "type": "integer"
+                      },
+                      "disconnected_ms": {
+                        "type": "integer"
+                      },
+                      "last_disconnect_reason": {
+                        "type": "integer"
+                      }
+                    }
+                  },
+                  "device_health": {
+                    "type": "object",
+                    "properties": {
+                      "uptime_s": {
+                        "type": "integer"
+                      },
+                      "free_heap_bytes": {
+                        "type": "integer"
+                      },
+                      "heap_fragmentation_percent": {
+                        "type": "integer"
+                      },
+                      "reset_reason": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "diagnostics": {
+                    "type": "object",
+                    "properties": {
+                      "local_http_code": {
+                        "type": "integer"
+                      },
+                      "internet_http_code": {
+                        "type": "integer",
+                        "nullable": true
+                      },
+                      "internet_test_kind": {
+                        "type": "string",
+                        "example": "dns_tcp"
+                      },
+                      "service_target": {
+                        "type": "string",
+                        "example": "google"
+                      }
+                    }
+                  },
+                  "ping": {
+                    "type": "object",
+                    "properties": {
+                      "job_id": {
+                        "type": "integer"
+                      },
+                      "target": {
+                        "type": "string"
+                      },
+                      "sent": {
+                        "type": "integer"
+                      },
+                      "received": {
+                        "type": "integer"
+                      },
+                      "loss_percent": {
+                        "type": "number"
+                      },
+                      "min_ms": {
+                        "type": "number",
+                        "nullable": true
+                      },
+                      "avg_ms": {
+                        "type": "number",
+                        "nullable": true
+                      },
+                      "max_ms": {
+                        "type": "number",
+                        "nullable": true
+                      },
+                      "age_ms": {
+                        "type": "integer"
+                      },
+                      "packets": {
+                        "type": "array",
+                        "maxItems": 4,
+                        "items": {
+                          "type": "object",
+                          "required": [
+                            "seq",
+                            "bytes",
+                            "ms",
+                            "ok"
+                          ],
+                          "properties": {
+                            "seq": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "bytes": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "ms": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "ok": {
+                              "type": "boolean"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "delivery": {
+                    "type": "object",
+                    "properties": {
+                      "mode": {
+                        "type": "string",
+                        "enum": [
+                          "live",
+                          "telemetry"
+                        ]
+                      },
+                      "send_interval_s": {
+                        "type": "integer",
+                        "minimum": 2,
+                        "maximum": 3600
+                      },
+                      "telemetry_interval_s": {
+                        "type": "integer",
+                        "minimum": 10,
+                        "maximum": 3600
+                      },
+                      "revision": {
+                        "type": "integer",
+                        "minimum": 0
+                      }
+                    }
+                  },
+                  "services": {
+                    "type": "object",
+                    "properties": {
+                      "google": {
+                        "type": "object",
+                        "required": [
+                          "dns_ok",
+                          "tcp_ok",
+                          "dns_ms",
+                          "tcp_ms",
+                          "age_ms"
+                        ],
+                        "properties": {
+                          "dns_ok": {
+                            "type": "boolean"
+                          },
+                          "tcp_ok": {
+                            "type": "boolean"
+                          },
+                          "dns_ms": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 120000
+                          },
+                          "tcp_ms": {
+                            "type": "integer",
+                            "nullable": true,
+                            "minimum": 0,
+                            "maximum": 120000
+                          },
+                          "age_ms": {
+                            "type": "integer",
+                            "minimum": 0
+                          }
+                        }
+                      },
+                      "youtube": {
+                        "type": "object",
+                        "required": [
+                          "dns_ok",
+                          "tcp_ok",
+                          "dns_ms",
+                          "tcp_ms",
+                          "age_ms"
+                        ],
+                        "properties": {
+                          "dns_ok": {
+                            "type": "boolean"
+                          },
+                          "tcp_ok": {
+                            "type": "boolean"
+                          },
+                          "dns_ms": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 120000
+                          },
+                          "tcp_ms": {
+                            "type": "integer",
+                            "nullable": true,
+                            "minimum": 0,
+                            "maximum": 120000
+                          },
+                          "age_ms": {
+                            "type": "integer",
+                            "minimum": 0
+                          }
+                        }
+                      },
+                      "tiktok": {
+                        "type": "object",
+                        "required": [
+                          "dns_ok",
+                          "tcp_ok",
+                          "dns_ms",
+                          "tcp_ms",
+                          "age_ms"
+                        ],
+                        "properties": {
+                          "dns_ok": {
+                            "type": "boolean"
+                          },
+                          "tcp_ok": {
+                            "type": "boolean"
+                          },
+                          "dns_ms": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 120000
+                          },
+                          "tcp_ms": {
+                            "type": "integer",
+                            "nullable": true,
+                            "minimum": 0,
+                            "maximum": 120000
+                          },
+                          "age_ms": {
+                            "type": "integer",
+                            "minimum": 0
+                          }
+                        }
+                      },
+                      "netflix": {
+                        "type": "object",
+                        "required": [
+                          "dns_ok",
+                          "tcp_ok",
+                          "dns_ms",
+                          "tcp_ms",
+                          "age_ms"
+                        ],
+                        "properties": {
+                          "dns_ok": {
+                            "type": "boolean"
+                          },
+                          "tcp_ok": {
+                            "type": "boolean"
+                          },
+                          "dns_ms": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 120000
+                          },
+                          "tcp_ms": {
+                            "type": "integer",
+                            "nullable": true,
+                            "minimum": 0,
+                            "maximum": 120000
+                          },
+                          "age_ms": {
+                            "type": "integer",
+                            "minimum": 0
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "environment": {
+                    "type": "object",
+                    "required": [
+                      "sensor_ok",
+                      "temperature_c",
+                      "humidity_percent",
+                      "reading_age_ms"
+                    ],
+                    "properties": {
+                      "sensor_ok": {
+                        "type": "boolean"
+                      },
+                      "temperature_c": {
+                        "type": "number",
+                        "nullable": true,
+                        "minimum": -40,
+                        "maximum": 80
+                      },
+                      "humidity_percent": {
+                        "type": "number",
+                        "nullable": true,
+                        "minimum": 0,
+                        "maximum": 100
+                      },
+                      "reading_age_ms": {
+                        "type": "integer",
+                        "minimum": 0
+                      }
+                    }
+                  },
+                  "features": {
+                    "type": "object",
+                    "properties": {
+                      "network": {
+                        "type": "boolean"
+                      },
+                      "temperature": {
+                        "type": "boolean"
+                      }
+                    }
+                  },
+                  "gateway_ping": {
+                    "type": "object",
+                    "properties": {
+                      "target": {
+                        "type": "string"
+                      },
+                      "sent": {
+                        "type": "integer"
+                      },
+                      "received": {
+                        "type": "integer"
+                      },
+                      "loss_percent": {
+                        "type": "number"
+                      },
+                      "min_ms": {
+                        "type": "number",
+                        "nullable": true
+                      },
+                      "avg_ms": {
+                        "type": "number",
+                        "nullable": true
+                      },
+                      "max_ms": {
+                        "type": "number",
+                        "nullable": true
+                      },
+                      "age_ms": {
+                        "type": "integer"
+                      },
+                      "measurement_id": {
+                        "type": "integer",
+                        "minimum": 1
+                      }
+                    }
+                  }
+                },
+                "description": "internet_ms wajib angka jika internet_ok true; selain itu null."
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Diterima"
+          },
+          "400": {
+            "description": "Payload invalid"
+          },
+          "401": {
+            "description": "Kunci salah"
+          },
+          "413": {
+            "description": "Body terlalu besar"
+          }
+        }
+      }
+    },
+    "/api/dashboard": {
+      "get": {
+        "summary": "/api/dashboard",
+        "responses": {
+          "200": {
+            "description": "JSON"
+          }
+        },
+        "parameters": [
+          {
+            "in": "query",
+            "name": "device_id",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Batasi pembacaan ke satu perangkat; tanpa parameter tetap seluruh perangkat."
+          },
+          {
+            "in": "query",
+            "name": "date",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "description": "Riwayat tanggal WIB (YYYY-MM-DD); memerlukan device_id. Tanpa date memakai snapshot realtime."
+          }
+        ]
+      }
+    },
+    "/api/probe": {
+      "get": {
+        "summary": "/api/probe",
+        "responses": {
+          "200": {
+            "description": "JSON"
+          }
+        }
+      }
+    },
+    "/api/events": {
+      "get": {
+        "summary": "Stream Live dashboard SSE",
+        "responses": {
+          "200": {
+            "description": "event: dashboard, data: JSON snapshot",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "in": "query",
+            "name": "device_id",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Batasi pembacaan ke satu perangkat; tanpa parameter tetap seluruh perangkat."
+          }
+        ]
+      }
+    },
+    "/api/v1/devices/{device_id}/control": {
+      "get": {
+        "summary": "Mode ESP yang diinginkan",
+        "parameters": [
+          {
+            "name": "device_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Mode, interval, lease, revision"
+          }
+        }
+      },
+      "post": {
+        "summary": "Aktifkan Live atau simpan mode Telemetri ESP",
+        "parameters": [
+          {
+            "name": "device_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "ReadToken": []
+          },
+          {}
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "mode"
+                ],
+                "properties": {
+                  "mode": {
+                    "type": "string",
+                    "enum": [
+                      "live",
+                      "telemetry"
+                    ]
+                  },
+                  "live_duration_s": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 120,
+                    "default": 120
+                  },
+                  "live_interval_s": {
+                    "type": "integer",
+                    "minimum": 2,
+                    "maximum": 30,
+                    "default": 2
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Disimpan, tunggu konfirmasi ESP"
+          },
+          "400": {
+            "description": "Pengaturan invalid"
+          },
+          "401": {
+            "description": "Token salah"
+          },
+          "404": {
+            "description": "Perangkat tidak ditemukan"
+          }
+        }
+      }
+    },
+    "/api/device/control": {
+      "get": {
+        "summary": "ESP mengambil mode dari server",
+        "security": [
+          {
+            "DeviceId": [],
+            "DeviceKey": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Mode, interval, live_remaining_s, revision"
+          },
+          "401": {
+            "description": "Kredensial perangkat salah"
+          }
+        }
+      }
+    },
+    "/api/overview": {
+      "get": {
+        "summary": "Snapshot kondisi dan ringkasan 24 jam, cache 5 menit",
+        "responses": {
+          "200": {
+            "description": "Snapshot dengan summary_24h, hourly, p95 dan slowest_hours"
+          }
+        }
+      }
+    },
+    "/api/environment": {
+      "get": {
+        "summary": "Sensor suhu/kelembapan terbaru dan ringkasan 24 jam",
+        "responses": {
+          "200": {
+            "description": "Daftar sensor, status, stats_24h dan hourly"
+          }
+        }
+      }
+    },
+    "/api/v1/devices/{device_id}/ping": {
+      "parameters": [
+        {
+          "name": "device_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "post": {
+        "summary": "Antrekan empat paket ICMP dari ESP, berlaku 60 detik",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "target"
+                ],
+                "properties": {
+                  "target": {
+                    "type": "string",
+                    "format": "ipv4"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "queued beserta job_id dan target"
+          },
+          "400": {
+            "description": "Tujuan tidak valid, offline, fitur jaringan nonaktif, atau ada perintah aktif"
+          },
+          "401": {
+            "description": "Bearer token diperlukan"
+          },
+          "404": {
+            "description": "Perangkat tidak ditemukan"
+          }
+        }
+      },
+      "get": {
+        "summary": "Status permintaan ping terbaru",
+        "responses": {
+          "200": {
+            "description": "idle, queued, completed (dengan result), atau expired"
+          },
+          "401": {
+            "description": "Bearer token diperlukan"
+          },
+          "404": {
+            "description": "Perangkat tidak ditemukan"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "ReadToken": {
+        "type": "http",
+        "scheme": "bearer"
+      },
+      "DeviceId": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-Device-ID"
+      },
+      "DeviceKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-Device-Key"
+      }
+    }
+  }
+}

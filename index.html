@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="id" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Command center pemantauan jaringan Wi-Fi multi lantai dan multi Wemos."><title>WARON IoT | Network Command Center</title><link rel="icon" type="image/png" href="/logo.png">
+
+<link rel="stylesheet" href="/assets/dashboard.css">
+</head>
+<body>
+<header><div class="brand"><img class="brand-mark" src="/logo.png" alt="Logo WARON" width="165"></div><nav class="module-nav" aria-label="Modul"><a class="active" href="/">Jaringan</a><a href="/temperature">Suhu &amp; kelembapan</a></nav><div class="header-right"><span class="badge warn" id="connection">MENGHUBUNGKAN API</span><div class="clock"><span id="clock">—</span><small id="date">—</small></div><div class="top-actions"><button id="device-live" class="hidden" type="button" aria-pressed="false" title="Live perangkat ini selama maksimal 2 menit">● Live</button></div></div></header>
+<main>
+<h1 class="visually-hidden">Pantauan jaringan</h1><p class="visually-hidden" id="connection-detail" role="status">Menghubungkan ke backend…</p>
+<section class="overview-strip" aria-label="Status jaringan"><div class="overview-network"><span class="overview-label">Internet</span><strong id="internet-status">—</strong><span id="internet-status-note" class="visually-hidden">Menunggu pengujian</span></div><div class="overview-item"><span class="overview-label">Perangkat online</span><strong><span id="online">—</span><small id="total">/ — node</small></strong></div><div class="overview-item"><span class="overview-label">Offline</span><strong id="offline">—</strong></div><div class="overview-item"><span class="overview-label">Lokal · 24 jam</span><strong><span id="average">—</span><small> ms</small></strong></div><div class="overview-item"><span class="overview-label">Perlu perhatian</span><strong class="amber-text" id="attention">—</strong></div><span class="visually-hidden" id="total-floors">—</span></section>
+<section class="panel monitoring-panel" aria-labelledby="floor-heading"><div class="section-heading"><div><h2 id="floor-heading">Ringkasan per perangkat · 24 jam</h2><p id="monitoring-summary">Memuat kondisi perangkat…</p></div><div class="filters" role="group" aria-label="Filter lantai"><button class="active" data-filter="all" aria-pressed="true">Semua</button><button data-filter="healthy" aria-pressed="false">Normal</button><button data-filter="attention" aria-pressed="false">Perlu perhatian</button></div></div>
+<div class="table-wrap"><table><thead><tr><th>Lantai / ruangan / perangkat</th><th>Wi-Fi</th><th>Internet · 24 jam</th><th>Layanan · rata-rata 24 jam</th><th>Uji internet</th><th>Lokal · rata-rata 24 jam</th><th>Jam terlama &amp; pembaruan</th><th></th></tr></thead><tbody id="floors"></tbody></table><p class="empty-state hidden" id="empty">Belum ada perangkat atau lantai pada kategori ini.</p><div class="monitoring-table-note"><span>✓ Layanan terjangkau</span><span>× Uji layanan gagal</span><span>— Belum diuji / data lama</span><span>Perhatian: sinyal &lt; −70 dBm atau respons lokal &gt; 60 ms</span></div></div></section>
+
+<footer><span>WARON IoT · Ringkasan 24 jam · Tampilan Live tersedia pada halaman perangkat</span><span id="updated">Menunggu pembaruan</span></footer>
+<div class="hidden" id="internet-counts"></div><div class="hidden" id="logs"></div>
+</main>
+<dialog id="ping-dialog"><form id="remote-ping-form"><h2>Ping dari perangkat</h2><p id="ping-device-name"></p><label for="remote-ping-target">IP tujuan IPv4</label><input id="remote-ping-target" value="1.1.1.1" required placeholder="192.168.0.1"><p class="muted">Empat paket ICMP dikirim dari D1 Mini yang dipilih.</p><div class="top-actions"><button type="button" id="close-ping">Tutup</button><button type="submit" id="submit-ping">Mulai ping</button></div></form><pre id="remote-ping-result" role="status">Belum ada pengujian.</pre></dialog><div class="toast hidden" id="toast" role="status"></div>
+
+<script src="/assets/dashboard.js" defer></script>
+</body>
+</html>

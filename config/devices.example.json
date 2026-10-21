@@ -1,0 +1,57 @@
+{
+  "devices": [
+    {
+      "id": "WMS-001",
+      "name": "Wemos Resepsionis",
+      "building": "Gedung Utama",
+      "floor": 1,
+      "room": "Resepsionis",
+      "device_key": "GANTI_KUNCI_PERANGKAT_1",
+      "enabled": true,
+      "features": {
+        "network": true,
+        "temperature": false
+      }
+    },
+    {
+      "id": "WMS-002",
+      "name": "Wemos Ruang Rapat",
+      "building": "Gedung Utama",
+      "floor": 1,
+      "room": "Ruang Rapat",
+      "device_key": "GANTI_KUNCI_PERANGKAT_2",
+      "enabled": true,
+      "features": {
+        "network": true,
+        "temperature": false
+      }
+    },
+    {
+      "id": "WMS-003",
+      "name": "Wemos Ruang Kerja",
+      "building": "Gedung Utama",
+      "floor": 2,
+      "room": "Ruang Kerja",
+      "device_key": "GANTI_KUNCI_PERANGKAT_3",
+      "enabled": true,
+      "features": {
+        "network": true,
+        "temperature": false
+      }
+    },
+    {
+      "id": "TMP-001",
+      "name": "Sensor DHT21",
+      "building": "Gedung Utama",
+      "floor": 1,
+      "room": "Ruang sensor",
+      "kind": "temperature",
+      "device_key": "GANTI_KUNCI_SENSOR",
+      "enabled": true,
+      "features": {
+        "network": false,
+        "temperature": true
+      }
+    }
+  ]
+}

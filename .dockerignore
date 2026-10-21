@@ -1,0 +1,17 @@
+*
+!Dockerfile
+!server.py
+!json_storage.py
+!index.html
+!device.html
+!temperature.html
+!temperature-device.html
+!logo.png
+!assets/
+!assets/**
+!docs/
+!docs/**
+!config/
+!config/devices.example.json
+!docker/
+!docker/entrypoint.sh

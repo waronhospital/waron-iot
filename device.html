@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="id" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Command center pemantauan jaringan Wi-Fi multi lantai dan multi Wemos."><title>Detail perangkat | WARON IoT</title><link rel="icon" type="image/png" href="/logo.png">
+
+<link rel="stylesheet" href="/assets/dashboard.css">
+</head>
+<body class="device-view">
+<header><div class="brand"><img class="brand-mark" src="/logo.png" alt="Logo WARON" width="165"></div><nav class="module-nav" aria-label="Modul"><a class="active" href="/">Jaringan</a><a href="/temperature">Suhu &amp; kelembapan</a></nav><div class="header-right"><span class="badge warn" id="connection">MENGHUBUNGKAN API</span><div class="clock"><span id="clock">—</span><small id="date">—</small></div><div class="top-actions"><button id="device-live" class="hidden" type="button" aria-pressed="false" title="Live perangkat ini selama maksimal 2 menit">● Live</button></div></div></header>
+<main>
+<nav class="device-breadcrumb" aria-label="Lokasi halaman"><a href="/">Semua perangkat</a><span aria-hidden="true">/</span><span id="breadcrumb-device">Detail perangkat</span></nav>
+<div class="page-heading device-heading visually-hidden"><div><span class="heading-label">PEMANTAUAN PERANGKAT</span><h1>Detail perangkat</h1><p id="connection-detail" role="status">Menghubungkan…</p></div><div class="device-heading-status"><span class="badge warn" id="device-state"><span class="dot"></span>Menunggu data</span><span id="last-report">Belum ada laporan</span></div></div>
+
+<section class="history-toolbar" aria-label="Pilihan waktu pemantauan"><div><strong>Periode pemantauan</strong><p id="view-note" role="status">Hari ini · diperbarui otomatis</p></div><div class="history-actions"><label for="history-date">Tanggal (WIB)<input id="history-date" type="date"></label><button id="view-history" type="button">Lihat riwayat</button></div></section>
+<section class="service-section" aria-labelledby="services-heading"><div class="section-heading visually-hidden"><div><h2 id="services-heading" title="Pengujian DNS dan TCP 443, bukan streaming atau login">Akses layanan</h2><p>Keterjangkauan dan waktu koneksi ke empat layanan.</p></div></div><div class="service-grid" id="service-cards"></div></section><div class="charts">
+<section class="panel"><div class="panel-head"><div><h2>Internet Response</h2><p>DNS & TCP 443 ditampilkan terpisah · bukan pengujian streaming</p></div><span class="muted" style="font-size:10px" data-chart-period>5 menit terakhir</span></div><label class="service-metric-label">Pengukuran <select id="service-metric"><option value="both">DNS &amp; TCP</option><option value="dns">DNS</option><option value="tcp">TCP</option></select></label><svg class="chart" id="internet-chart" viewBox="0 0 760 260" role="img" aria-label="Grafik waktu akses Google, YouTube, TikTok dan Netflix"></svg><div class="chart-key" id="service-legend"></div></section>
+<section class="panel"><div class="panel-head"><div><h2>Gateway Response (Local)</h2><p>ICMP menju gateway</p></div><span class="muted" style="font-size:10px" data-chart-period>5 menit terakhir</span></div><svg class="chart" id="chart" viewBox="0 0 760 260" role="img" aria-label="Grafik waktu respons ping ke gateway"></svg><p class="gateway-note">Data ini diambil dari hasil PING (ICMP) ke gateway.</p></section>
+</div><div class="chart-key" id="legend"></div>
+<details class="technical-disclosure"><summary>Informasi teknis perangkat</summary><section id="data-dialog" class="device-page hidden"><div class="panel-head"><h2 id="data-title">Telemetri perangkat</h2></div><div id="device-inspector"></div><details><summary>JSON telemetri</summary><pre id="raw-data"></pre></details></section></details>
+<footer><span>WARON IoT · Monitor jaringan</span><span id="updated">Menunggu pembaruan</span></footer>
+<div class="hidden" id="internet-counts"></div><div class="hidden" id="logs"></div>
+</main><div class="toast hidden" id="toast" role="status"></div>
+
+<script src="/assets/dashboard.js" defer></script>
+<script src="/assets/chart-tooltips.js" defer></script></body>
+</html>

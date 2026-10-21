@@ -1,0 +1,11 @@
+data/
+__pycache__/
+*.pyc
+firmware/netpulse/config.h
+
+config/devices.json
+
+esp32-temperature/config.h
+
+.env
+backups/

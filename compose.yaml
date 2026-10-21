@@ -1,0 +1,61 @@
+services:
+  waron-iot:
+    build: .
+    image: waron-iot:local
+    init: true
+    restart: unless-stopped
+    ports:
+      - "${WARON_PORT:-8000}:8000"
+    environment:
+      TZ: Asia/Jakarta
+      NETPULSE_READ_TOKEN: "${NETPULSE_READ_TOKEN:-}"
+      NETPULSE_CORS_ORIGINS: "${NETPULSE_CORS_ORIGINS:-}"
+    volumes:
+      - type: bind
+        source: ./config
+        target: /app/config
+        read_only: true
+      - telemetry:/app/data
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  data-browser:
+    image: nginx:stable-alpine
+    user: "10001:10001"
+    entrypoint: ["nginx", "-g", "daemon off;"]
+    restart: unless-stopped
+    ports:
+      - "${WARON_DATA_PORT:-8081}:8080"
+    volumes:
+      - telemetry:/srv/data:ro
+      - ./docker/data-browser.conf:/etc/nginx/nginx.conf:ro
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:8080/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  telemetry:
