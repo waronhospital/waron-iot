@@ -1,12 +1,12 @@
 {
   "devices": [
     {
-      "id": "WMS-001",
-      "name": "Wemos Resepsionis",
-      "building": "Gedung Utama",
-      "floor": 1,
-      "room": "Resepsionis",
-      "device_key": "GANTI_KUNCI_PERANGKAT_1",
+      "id": "ESP01",
+      "name": "OFFICE",
+      "building": "WARONHSOPITAL",
+      "floor": 12,
+      "room": "OFFICE",
+      "device_key": "qazwsx1234",
       "enabled": true,
       "features": {
         "network": true,
@@ -14,12 +14,12 @@
       }
     },
     {
-      "id": "WMS-002",
-      "name": "Wemos Ruang Rapat",
-      "building": "Gedung Utama",
-      "floor": 1,
-      "room": "Ruang Rapat",
-      "device_key": "GANTI_KUNCI_PERANGKAT_2",
+      "id": "ESP02",
+      "name": "RANAP11",
+      "building": "WARONHOSPITAL",
+      "floor": 11,
+      "room": "RANAP11",
+      "device_key": "qazwsx1234",
       "enabled": true,
       "features": {
         "network": true,
@@ -27,12 +27,25 @@
       }
     },
     {
-      "id": "WMS-003",
-      "name": "Wemos Ruang Kerja",
-      "building": "Gedung Utama",
+      "id": "ESP03",
+      "name": "RANAP10",
+      "building": "WARONHOSPITAL",
+      "floor": 10,
+      "room": "RANAP10",
+      "device_key": "qazwsx1234",
+      "enabled": true,
+      "features": {
+        "network": true,
+        "temperature": false
+      }
+    },
+    {
+      "id": "ESP04",
+      "name": "RAJAL2",
+      "building": "WARONHOSPITAL",
       "floor": 2,
-      "room": "Ruang Kerja",
-      "device_key": "GANTI_KUNCI_PERANGKAT_3",
+      "room": "RAJAL2",
+      "device_key": "qazwsx1234",
       "enabled": true,
       "features": {
         "network": true,
@@ -40,13 +53,26 @@
       }
     },
     {
-      "id": "TMP-001",
-      "name": "Sensor DHT21",
-      "building": "Gedung Utama",
-      "floor": 1,
-      "room": "Ruang sensor",
+      "id": "ESP05",
+      "name": "RAJAL1",
+      "building": "WARONHOSPITAL",
+      "floor": 10,
+      "room": "RAJAL1",
+      "device_key": "qazwsx1234",
+      "enabled": true,
+      "features": {
+        "network": true,
+        "temperature": false
+      }
+    },    
+    {
+      "id": "ESPSERVER",
+      "name": "SERVER",
+      "building": "WARONHOSPITAL",
+      "floor": 12,
+      "room": "SERVER",
       "kind": "temperature",
-      "device_key": "GANTI_KUNCI_SENSOR",
+      "device_key": "qazwsx7890",
       "enabled": true,
       "features": {
         "network": false,
