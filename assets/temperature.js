@@ -1,6 +1,7 @@
 'use strict';
 const $=id=>document.getElementById(id);let data={devices:[],server_time_ms:Date.now(),from_ms:Date.now()-86400000},selected=decodeURIComponent(window.location.pathname.match(/^\/(?:temperature\/devices|devices)\/([^/]+)/)?.[1]||'');
 const value=n=>typeof n==='number'?n.toFixed(1):'—';
+if(selected&&$('controller-access'))$('controller-access').href='/controllers/'+encodeURIComponent(selected)+'/';
 
 function espAccess(ip,online){
  if(!online||typeof ip!=='string'||!/^\d{1,3}(?:\.\d{1,3}){3}$/.test(ip))return '';

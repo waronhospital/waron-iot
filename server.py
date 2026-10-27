@@ -686,16 +686,16 @@ class Handler(BaseHTTPRequestHandler):
                 device=db.device(device_id)
             if not device or not device.get('enabled',True) or (device.get('features') is not None and not device['features']['temperature']):
                 return self.reply(404,dict(error='Perangkat suhu tidak ditemukan atau tidak aktif'))
-            return self.reply(200,(ROOT/'temperature-device.html').read_bytes(),'text/html; charset=utf-8')
+            return self.reply(200,(ROOT/'temperature-device.html').read_text().replace('id="controller-access"', 'id="controller-access" href="/controllers/'+device_id+'/"').encode(),'text/html; charset=utf-8')
         if path.startswith('/devices/'):
             device_id=unquote(path[len('/devices/'):].rstrip('/'))
-            if '/' in device_id or not device_id:
+            if not device_id or any(c not in 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-' for c in device_id):
                 return self.reply(404,dict(error='Perangkat tidak ditemukan'))
             with connect() as db:
                 device=db.device(device_id)
                 if not device:return self.reply(404,dict(error='Perangkat tidak ditemukan'))
             filename='temperature-device.html' if device['kind']=='temperature' else 'device.html'
-            return self.reply(200,(ROOT/filename).read_bytes(),'text/html; charset=utf-8')
+            return self.reply(200,(ROOT/filename).read_text().replace('id="controller-access"', 'id="controller-access" href="/controllers/'+device_id+'/"').encode(),'text/html; charset=utf-8')
         files = {'/assets/chart-tooltips.js':('assets/chart-tooltips.js','application/javascript; charset=utf-8'), '/temperature':('temperature.html','text/html; charset=utf-8'), '/assets/temperature.js':('assets/temperature.js','application/javascript; charset=utf-8'), '/assets/dashboard.css': ('assets/dashboard.css','text/css; charset=utf-8'), '/assets/dashboard.js': ('assets/dashboard.js','application/javascript; charset=utf-8'), '/': ('index.html', 'text/html; charset=utf-8'), '/index.html': ('index.html', 'text/html; charset=utf-8'), '/logo.png': ('logo.png', 'image/png')}
         if path in files:
             filename, mime = files[path]
