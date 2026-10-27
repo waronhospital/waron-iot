@@ -11,7 +11,7 @@ RUN apt-get update \
     && useradd --uid 10001 --gid waron --no-create-home waron
 
 WORKDIR /app
-COPY server.py json_storage.py controller_proxy.py ./
+COPY server.py json_storage.py controller_proxy.py telemetry_rollups.py ./
 COPY docker/entrypoint.sh /usr/local/bin/waron-entrypoint
 COPY index.html device.html temperature.html temperature-device.html logo.png ./
 COPY assets/ ./assets/

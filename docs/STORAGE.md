@@ -49,3 +49,20 @@ state.json tetap memakai penggantian file atomik karena bukan log telemetri. Jik
 - Data terbaru tiap perangkat disimpan dalam cache memori. Pembacaan JSONL yang masih ada dalam cache hanya memuat tambahan baris. Cache dokumen harian dibatasi 16 file; riwayat di disk tetap menjadi sumber persisten.
 
 /api/events tanpa device_id tetap tersedia untuk aplikasi lama yang membutuhkan seluruh perangkat. Endpoint /api/dashboard?device_id=... menyediakan snapshot perangkat dengan format respons yang sama. Parameter perangkat yang tidak terdaftar menghasilkan 404.
+
+## Snapshot dan ringkasan materialisasi
+
+Backend membuat `data/summaries/<ID>-DD-MM-YYYY.json` secara otomatis. File ini berisi laporan terakhir perangkat, jumlah laporan, posisi baca JSONL, statistik per jam, histogram nilai untuk P95, dan event pengukuran ringkas untuk batas waktu parsial.
+
+- Laporan asli tetap di-append ke JSONL terlebih dahulu.
+- Setelah append berhasil, backend membaca bagian file yang baru ditambahkan dan memperbarui snapshot serta ringkasan. Tidak mem-parsing ulang seluruh laporan lama pada setiap pengiriman.
+- Dashboard utama dan grafik ringkasan jaringan menggabungkan statistik per jam; jam di tepi rentang dibatasi menggunakan event ringkas agar rentang 24 jam tidak dibulatkan ke hari/jam penuh.
+- Hasil layanan berulang tetap dideduplikasi; minat data P95 tetap dihitung dari histogram, bukan rata-rata P95 tiap jam.
+- Detail tanggal mengambil snapshot dan jumlah laporan dari indeks jika seluruh laporan hari tersebut berada dalam rentang; data mentah masih digunakan untuk fallback jika ada timestamp di luar rentang.
+- Setelah restart, snapshot/ringkasan bisa dibaca dari file turunan tanpa mem-parsing ulang JSONL yang tidak berubah.
+- File turunan hilang, tidak valid, atau sumber diganti akan dibangun ulang dari arsip. Pembuatan pertama pada instalasi dengan riwayat besar masih membutuhkan waktu satu kali. Arsip terbaru dan dua hari terakhir disiapkan sebelum backend mulai melayani HTTP; arsip historis lainnya disiapkan saat diminta.
+- Posisi baca hanya dimajukan melewati baris lengkap. Data yang baru sebagian tertulis tidak dianggap laporan lengkap.
+
+Folder summaries adalah cache yang dapat dibangun ulang, bukan pengganti backup JSONL. Jangan mengedit atau menghapusnya saat backend sedang menulis. Ia ikut tersimpan dalam volume data Docker; tidak memerlukan database atau volume tambahan. Rebuild image Docker untuk menyertakan modul `telemetry_rollups.py`.
+
+Ringkasan lingkungan suhu juga menggunakan statistik per jam tersimpan untuk jumlah berhasil/gagal, rata-rata, minimum, dan maksimum. Perangkat tetap dimuat lewat endpoint ringan sebelum ringkasan utama.

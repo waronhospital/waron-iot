@@ -246,3 +246,7 @@ Riwayat grafik lokal dan service_history menyertakan max_gap_ms per sampel, berd
 Field gateway_ping terpisah dari ping manual dan local_ms. gateway_ping berisi measurement_id, target (IPv4 gateway Wi-Fi), sent, received, loss_percent, min_ms, avg_ms, max_ms dan age_ms. Tidak ada balasan: RTT null. Firmware mengirim satu paket ICMP ke WiFi.gatewayIP() sebelum setiap laporan jaringan. Pengujian gateway dan ping manual memakai SDK bergantian; tidak dijalankan bersamaan. Mode suhu saja tidak melakukan ping gateway.
 
 Snapshot perangkat menambahkan gateway_history lima menit terakhir. Ringkasan harian menambahkan gateway dan hourly[].gateway, dengan deduplikasi measurement_id/boot_id/waktu pengukuran. local_ms, history, summary.local tetap respons HTTP backend untuk kompatibilitas; grafik Ping ke gateway hanya membaca field gateway. Data lama tanpa gateway_ping tidak dianggap hasil gateway, termasuk ping manual ke tujuan lain.
+
+### Daftar perangkat ringan
+
+`GET /api/devices/status` mengembalikan snapshot perangkat jaringan tanpa riwayat grafik atau agregat 24 jam. Dashboard memuat endpoint ini dahulu, kemudian `/api/overview` untuk ringkasan. Telemetri dan format arsip tidak berubah. Pembacaan awal storage masih perlu memuat file laporan terakhir pada cache dingin.

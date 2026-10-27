@@ -14,6 +14,25 @@ class BackendTests(unittest.TestCase):
         with server.connect():pass
         with server.connect() as db:
             db.put_device('WMS-001',1,hashlib.sha256(b'test').hexdigest())
+    def test_lightweight_snapshot_does_not_read_history(self):
+        self.insert(1000)
+        with server.connect() as store:
+            with patch.object(store,'history',side_effect=AssertionError('history must not load')):
+                data=server.snapshot(now=1001,include_history=False)
+        node=data['floors'][0]['nodes'][0]
+        self.assertEqual(node['id'],'WMS-001')
+        self.assertEqual(node['history'],[])
+        self.assertEqual(node['service_history'],{name:[] for name in server.SERVICE_TARGETS})
+
+    def test_summary_preloaded_rows_matches_history(self):
+        self.insert(1000)
+        self.insert(1010,ok=False)
+        expected=server.summary_24h(now=1020,device_id='WMS-001')
+        with server.connect() as store:
+            rows=store.history('WMS-001',since=0,raw=True)
+            self.assertIsInstance(rows[0]['details'],dict)
+        self.assertEqual(server.summary_24h(now=1020,device_id='WMS-001',_rows=rows),expected)
+
     def tearDown(self):
         self.patch.stop()
         self.temp.cleanup()

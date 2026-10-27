@@ -16,3 +16,4 @@
 !docker/
 !docker/entrypoint.sh
 !controller_proxy.py
+!telemetry_rollups.py

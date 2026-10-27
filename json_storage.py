@@ -12,6 +12,7 @@ from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
+from telemetry_rollups import Rollups
 
 
 class JsonStorage:
@@ -23,6 +24,7 @@ class JsonStorage:
         self.cache = OrderedDict()
         self.last_id = 0
         self.latest_cache = {}
+        self.rollups=Rollups(self)
 
     @staticmethod
     def valid_id(device_id):
@@ -212,22 +214,21 @@ class JsonStorage:
             stat=path.stat();signature=(path,stat.st_ino,stat.st_mtime_ns,stat.st_size)
             cached=self.latest_cache.get(device_id)
             if cached and cached[0]==signature:return self.row(cached[1])
-            samples=self.read_day(path)['samples']
-            if samples:
-                sample=max(samples,key=lambda s:s['id'])
+            sample=self.rollups.read(path)['latest']
+            if sample:
                 self.latest_cache[device_id]=(signature,sample)
                 return self.row(sample)
         return None
 
-    def history(self,device_id,since=None,after_id=0,limit=None):
+    def history(self,device_id,since=None,after_id=0,limit=None,raw=False):
         rows=[]
         for path in self.paths(device_id,since):
-            rows.extend(self.row(s) for s in self.read_day(path)['samples'] if s['id']>after_id and (since is None or s['received']>=since))
+            rows.extend((s if raw else self.row(s)) for s in self.read_day(path)['samples'] if s['id']>after_id and (since is None or s['received']>=since))
         rows.sort(key=lambda r:r['id'])
         return rows if limit is None else rows[:limit]
 
-    def network_history(self,since):
-        rows=[row for d in self.devices(kind='network') for row in self.history(d['id'],since=since)]
+    def network_history(self,since,raw=False):
+        rows=[row for d in self.devices(kind='network') for row in self.history(d['id'],since=since,raw=raw)]
         return sorted(rows,key=lambda r:(r['received'],r['id']))
 
     def append(self,device_id,received,rssi,local_ms=None,internet_ok=None,internet_ms=None,details=None,record_id=None):
@@ -245,4 +246,8 @@ class JsonStorage:
         if previous is None or record_id>previous['id']:
             self.latest_cache[device_id]=((path,stat.st_ino,stat.st_mtime_ns,stat.st_size),sample)
         self.last_id=max(self.last_id,record_id)
+        try:self.rollups.read(path)
+        except (OSError,ValueError):
+            # Source append already durable. Rebuild the derived view on next read.
+            self.rollups.cache.pop(path,None)
         return record_id

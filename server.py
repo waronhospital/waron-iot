@@ -327,7 +327,7 @@ def validate_details(payload):
     return details
 
 
-def snapshot(now=None, device_id=None):
+def snapshot(now=None, device_id=None, include_history=True):
     now = time.time() if now is None else now
     floors = []
     with connect() as db:
@@ -336,7 +336,7 @@ def snapshot(now=None, device_id=None):
             if not device.get('enabled',True) or device.get('features') is not None and not device['features']['network']:continue
             latest = db.latest(device['id'])
             if device.get('features') is None and latest and json.loads(latest['details']).get('features',{}).get('network') is False:continue
-            rows = db.history(device['id'],since=now-300)
+            rows = db.history(device['id'],since=now-300) if include_history else []
             node = dict(id=device['id'], latestInternetOk=bool(latest['internet_ok']) if latest and latest['internet_ok'] is not None else None, latestInternetMs=latest['internet_ms'] if latest else None, details=json.loads(latest['details']) if latest else {}, floorId=device['floor'], name=device['name'] or device['id'], building=device['building'], position=device['room'], online=bool(latest and now-latest['received'] <= 35), lastSeen=latest['received']*1000 if latest else None, rssi=latest['rssi'] if latest else None, latency=latest['local_ms'] if latest else None, internet=[dict(time=r['received']*1000, ok=bool(r['internet_ok']), ms=r['internet_ms']) for r in rows if r['internet_ok'] is not None])
             desired=delivery_config(db,device['id'],now)
             reported=node['details'].get('delivery',{})
@@ -402,24 +402,15 @@ def environment_snapshot(now=None):
             latest_details=json.loads(latest['details']) if latest else {}
             if device.get('features') is None and device['kind']!='temperature' and not latest_details.get('features',{}).get('temperature',False) and 'environment' not in latest_details:continue
             if device.get('features') is None and latest_details.get('features',{}).get('temperature') is False:continue
-            readings={};failed=0
-            for row in db.history(device['id'],since=now-86400):
-                env=json.loads(row['details']).get('environment')
-                if not env:continue
-                if not env['sensor_ok']:failed+=1;continue
-                bucket=int(row['received']//3600)*3600
-                values=readings.setdefault(bucket,{'t':[],'h':[]})
-                values['t'].append(env['temperature_c']);values['h'].append(env['humidity_percent'])
+            statistics,hourly=db.rollups.environment(device['id'],now-86400,now)
             details=json.loads(latest['details']) if latest else {}
             env=details.get('environment')
             offline_after=max(95,details.get('delivery',{}).get('send_interval_s',30)*3+5)
             online=bool(latest and now-latest['received']<=offline_after)
             age=env['reading_age_ms']+max(0,now-latest['received'])*1000 if env else None
             status='waiting' if not latest else 'offline' if not online else 'sensor_error' if not env or not env['sensor_ok'] else 'stale' if age>offline_after*1000 else 'ok'
-            t=[v for values in readings.values() for v in values['t']];h=[v for values in readings.values() for v in values['h']]
             result.append(dict(**dict(device),status=status,online=online,ip=details.get('wifi',{}).get('ip'),last_seen_ms=latest['received']*1000 if latest else None,reading_age_ms=age,temperature_c=env['temperature_c'] if status=='ok' else None,humidity_percent=env['humidity_percent'] if status=='ok' else None,
-                stats_24h=dict(samples=len(t),failed=failed,min_c=min(t) if t else None,max_c=max(t) if t else None,average_c=round(sum(t)/len(t),1) if t else None,average_humidity=round(sum(h)/len(h),1) if h else None),
-                hourly=[dict(time=bucket*1000,temperature_c=round(sum(v['t'])/len(v['t']),1),humidity_percent=round(sum(v['h'])/len(v['h']),1),min_c=min(v['t']),max_c=max(v['t']),samples=len(v['t'])) for bucket,v in sorted(readings.items())]))
+                stats_24h=statistics,hourly=hourly))
     return dict(server_time_ms=now*1000,from_ms=(now-86400)*1000,devices=result)
 
 
@@ -427,9 +418,13 @@ OVERVIEW_LOCK=threading.Lock()
 OVERVIEW_CACHE={'until':0,'data':None}
 
 
-def summary_24h(now=None, start=None, device_id=None):
+def summary_24h(now=None, start=None, device_id=None, _rows=None):
     now=time.time() if now is None else now
     start=now-86400 if start is None else start
+    if _rows is None:
+        with connect() as store:
+            ids=[device_id] if device_id else [d['id'] for d in store.devices(kind='network')]
+            return store.rollups.summary(ids,start,now)
     def stats():return {'tests':0,'failed':0,'values':Counter()}
     def add(target,value,ok=True):
         target['tests']+=1
@@ -450,12 +445,12 @@ def summary_24h(now=None, start=None, device_id=None):
         if key not in hours:hours[key]={'local':stats(),'gateway':stats(),'services':{name:serviceStats() for name in SERVICE_TARGETS}}
         return hours[key]
     with connect() as db:
-        rows=db.history(device_id,since=start) if device_id else db.network_history(start)
+        rows=_rows if _rows is not None else db.history(device_id,since=start,raw=True) if device_id else db.network_history(start,raw=True)
         for row in rows:
             if row['received']>now:continue
-            if json.loads(row['details']).get('features',{}).get('network') is False:continue
+            detail=row['details']
+            if detail.get('features',{}).get('network') is False:continue
             h=hour(row['received']);add(local,row['local_ms'],row['local_ms'] is not None);add(h['local'],row['local_ms'],row['local_ms'] is not None)
-            detail=json.loads(row['details'])
             g=detail.get('gateway_ping')
             if g:
                 measured=row['received']-g['age_ms']/1000
@@ -491,7 +486,7 @@ def overview():
     now=time.time()
     with OVERVIEW_LOCK:
         if OVERVIEW_CACHE['data'] is not None and now<OVERVIEW_CACHE['until']:return OVERVIEW_CACHE['data']
-        data=snapshot(now)
+        data=snapshot(now,include_history=False)
         data['summary_24h']=summary_24h(now)
         for floor in data['floors']:
             for node in floor['nodes']:
@@ -516,14 +511,22 @@ def device_day(device_id,date):
         if start>time.time():raise ValueError('Tanggal tidak boleh di masa depan')
         end=(day+timedelta(days=1)).replace(tzinfo=store.timezone).timestamp()
         cutoff=min(end-0.000001,time.time())
-        rows=[r for r in store.history(device_id,since=start) if r['received']<=cutoff]
-    latest=max(rows,key=lambda r:r['id']) if rows else None
+        paths=[p for p in store.paths(device_id,start) if p.stem==device_id+'-'+day.strftime('%d-%m-%Y')]
+        view=store.rollups.read(paths[0]) if paths else None
+        if view and view['first_received'] is not None and view['first_received']>=start and view['last_received']<=cutoff:
+            latest=store.row(view['latest']);sample_count=view['reports']
+        elif not paths:
+            latest=None;sample_count=0
+        else:
+            rows=[r for r in store.history(device_id,since=start) if r['received']<=cutoff]
+            latest=max(rows,key=lambda r:r['id']) if rows else None
+            sample_count=len(rows)
     details=json.loads(latest['details']) if latest else {}
     node=dict(id=device_id,floorId=device['floor'],name=device['name'] or device_id,building=device['building'],position=device['room'],online=False,lastSeen=latest['received']*1000 if latest else None,rssi=latest['rssi'] if latest else None,latency=latest['local_ms'] if latest else None,latestInternetOk=bool(latest['internet_ok']) if latest and latest['internet_ok'] is not None else None,latestInternetMs=latest['internet_ms'] if latest else None,details=details,internet=[],history=[],services={},service_history={},control={'mode':'telemetry','live_remaining_s':0},offline_after_s=35)
     floor=dict(id=device['floor'],name='Lantai '+str(device['floor']),building=device['building'],area=device['building'],nodes=[node],history=[])
     summary=summary_24h(cutoff,start=start,device_id=device_id)
     summary['to_ms']=end*1000
-    return dict(serverTime=time.time()*1000,floors=[floor],view='history',date=date,timezone='Asia/Jakarta',samples=len(rows),summary_24h=summary)
+    return dict(serverTime=time.time()*1000,floors=[floor],view='history',date=date,timezone='Asia/Jakarta',samples=sample_count,summary_24h=summary)
 
 
 def quality(node):
@@ -670,6 +673,8 @@ class Handler(BaseHTTPRequestHandler):
             return self.reply(200,snapshot(device_id=device_id))
         if path == '/api/environment':
             return self.reply(200,environment_snapshot())
+        if path == '/api/devices/status':
+            return self.reply(200,snapshot(include_history=False))
         if path == '/api/overview':
             return self.reply(200,overview())
         if path == '/api/dashboard':
@@ -762,6 +767,23 @@ class Handler(BaseHTTPRequestHandler):
         self.connection.settimeout(10)
 
 
+def warm_materialized_views():
+    """Pay the one-time rebuild cost at startup, before accepting HTTP."""
+    since=time.time()-172800
+    count=0
+    with connect() as store:
+        devices=store.devices()
+    for device in devices:
+        with connect() as store:
+            paths=store.paths(device['id'])
+            recent=store.paths(device['id'],since)
+            if paths and paths[-1] not in recent:recent.append(paths[-1])
+            for path in recent:
+                store.rollups.read(path)
+                count+=1
+    return count
+
+
 def main():
     global CONFIG_WATCH_PATH, CONFIG_WATCH_SIGNATURE
     parser = argparse.ArgumentParser(description=__doc__)
@@ -828,6 +850,9 @@ def main():
         parser.error('File konfigurasi tidak ditemukan')
     if args.check_config:
         return
+    print('Menyiapkan snapshot dan ringkasan tersimpan…',flush=True)
+    count=warm_materialized_views()
+    print(f'Ringkasan siap: {count} arsip harian',flush=True)
     print(f'WARON IoT tersedia di http://{args.host}:{args.port}', flush=True)
     ThreadingHTTPServer((args.host, args.port), Handler).serve_forever()
 
