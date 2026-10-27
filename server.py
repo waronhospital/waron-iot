@@ -1,4 +1,5 @@
 """WARON IoT local backend. Python 3.9+, no external dependencies."""
+import controller_proxy
 import argparse
 from datetime import datetime, timedelta
 import ipaddress
@@ -416,7 +417,7 @@ def environment_snapshot(now=None):
             age=env['reading_age_ms']+max(0,now-latest['received'])*1000 if env else None
             status='waiting' if not latest else 'offline' if not online else 'sensor_error' if not env or not env['sensor_ok'] else 'stale' if age>offline_after*1000 else 'ok'
             t=[v for values in readings.values() for v in values['t']];h=[v for values in readings.values() for v in values['h']]
-            result.append(dict(**dict(device),status=status,last_seen_ms=latest['received']*1000 if latest else None,reading_age_ms=age,temperature_c=env['temperature_c'] if status=='ok' else None,humidity_percent=env['humidity_percent'] if status=='ok' else None,
+            result.append(dict(**dict(device),status=status,online=online,ip=details.get('wifi',{}).get('ip'),last_seen_ms=latest['received']*1000 if latest else None,reading_age_ms=age,temperature_c=env['temperature_c'] if status=='ok' else None,humidity_percent=env['humidity_percent'] if status=='ok' else None,
                 stats_24h=dict(samples=len(t),failed=failed,min_c=min(t) if t else None,max_c=max(t) if t else None,average_c=round(sum(t)/len(t),1) if t else None,average_humidity=round(sum(h)/len(h),1) if h else None),
                 hourly=[dict(time=bucket*1000,temperature_c=round(sum(v['t'])/len(v['t']),1),humidity_percent=round(sum(v['h'])/len(v['h']),1),min_c=min(v['t']),max_c=max(v['t']),samples=len(v['t'])) for bucket,v in sorted(readings.items())]))
     return dict(server_time_ms=now*1000,from_ms=(now-86400)*1000,devices=result)
@@ -608,6 +609,10 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         parsed = urlsplit(self.path)
         path = parsed.path
+        if path.startswith('/controllers/'):
+            try:reload_device_config()
+            except (ValueError,OSError):return self.reply(400,dict(error='Konfigurasi perangkat tidak valid'))
+            return controller_proxy.serve(self,connect)
         if path.startswith('/api/') or path.startswith('/devices/') or path.startswith('/temperature/devices/'):
             try:reload_device_config()
             except (ValueError,OSError) as exc:return self.reply(400,dict(error='Konfigurasi perangkat tidak valid: '+str(exc)))
@@ -701,6 +706,8 @@ class Handler(BaseHTTPRequestHandler):
         self.reply(204, b'')
 
     def do_POST(self):
+        if urlsplit(self.path).path.startswith('/controllers/'):
+            return controller_proxy.serve(self,connect)
         parts=urlsplit(self.path).path.strip('/').split('/')
         if len(parts)==5 and parts[:3]==['api','v1','devices'] and parts[4] in ('control','ping'):
             token=os.environ.get('NETPULSE_READ_TOKEN','')

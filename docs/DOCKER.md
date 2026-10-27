@@ -94,15 +94,28 @@ curl http://localhost:8000/api/environment
 
 Tes Python dapat dijalankan dengan `python3 -m unittest discover -s tests`. Build image, healthcheck, izin volume, dan koneksi dari ESP perlu diverifikasi pada host yang menyediakan Docker. Docker tidak tersedia pada lingkungan implementasi saat paket ini disiapkan.
 
-## Browser file telemetri
+## Akses data melalui API
 
-Compose menyediakan service `data-browser` pada `http://localhost:8081/` atau `http://IP-SERVER:8081/`. Jalankan `docker compose up -d --build`. Pilih berkas untuk membaca JSON/JSONL; simpan melalui browser untuk mengunduh. Port dapat diubah melalui `WARON_DATA_PORT` dalam `.env`.
+Compose hanya menjalankan backend Python pada port 8000, tanpa layanan Nginx atau browser file. Contoh URL:
 
-Layanan ini tanpa login dan hanya-baca. Folder yang dibuka adalah `/app/data/telemetry` milik backend (volume sama), bukan seluruh data internal. State, lock, dan berkas setup tidak memiliki rute akses. Waktu daftar file Nginx mengikuti UTC; timestamp di dalam JSON mengikuti format data aplikasi. Sebelum laporan pertama, folder telemetry mungkin belum ada sehingga browser memberi 404; kirim telemetri atau impor riwayat dahulu.
+- `/api/overview`: ringkasan seluruh perangkat jaringan.
+- `/api/environment`: data suhu dan kelembapan.
+- `/api/dashboard?device_id=WMS-001&date=2026-10-21`: detail jaringan pada tanggal tertentu.
+- `/api/v1/devices/WMS-001/history?limit=100`: riwayat telemetri perangkat dengan pagination.
 
-Jika storage backend diganti ke bind mount `./data:/app/data`, ganti juga mount data-browser menjadi `./data:/usr/share/nginx/html:ro` agar kedua layanan membaca data sama. Jangan memakai volume berbeda.
+Contoh dari host:
 
-Docker/Nginx tidak tersedia di lingkungan implementasi; konfigurasi perlu diverifikasi dengan `docker compose config` dan akses browser pada host Docker. Contoh pemeriksaan: `curl -I http://localhost:8081/` dan pastikan `curl -I http://localhost:8081/state.json` menghasilkan 404. Akses langsung tanpa login ini ditujukan bagi pihak yang bisa menjangkau port; isi telemetri memuat informasi jaringan seperti IP dan SSID.
+```sh
+curl 'http://localhost:8000/api/v1/devices/WMS-001/history?limit=100'
+```
+
+Jika `NETPULSE_READ_TOKEN` diaktifkan, tambahkan header `Authorization: Bearer TOKEN` untuk API v1. Dokumentasi selengkapnya: [API.md](API.md).
+
+Jika layanan Nginx sebelumnya sudah dijalankan, hapus container service lama tanpa menghapus volume data:
+
+```sh
+docker compose up -d --build --remove-orphans
+```
 
 ## Volume konfigurasi
 
@@ -126,6 +139,3 @@ docker compose cp ./devices.docker.json waron-iot:/app/config/devices.json
 
 Untuk backup, salin konfigurasi dengan `docker compose cp waron-iot:/app/config/devices.json ./backups/devices.json` selain backup volume telemetri. Volume lama tidak ditimpa template ketika image dibangun ulang. `docker compose down -v` menghapus kedua volume, termasuk konfigurasi.
 
-Volume browser data dipasang ke `/usr/share/nginx/html`, direktori web bawaan image Nginx resmi. Root listing diarahkan ke subfolder `telemetry` agar state dan kunci tidak ikut terbuka. Konfigurasi Nginx tetap diperlukan untuk autoindex dan port internal 80.
-
-Service browser memakai port internal 80, diteruskan ke port host 8081 secara default. Sysctl `net.ipv4.ip_unprivileged_port_start=0` dalam namespace container memungkinkan UID 10001 bind port 80 tanpa menambah capability. Untuk port host 80 juga, set `WARON_DATA_PORT=80` di `.env` dan pastikan port host tersebut kosong.
