@@ -1,6 +1,6 @@
 # WARON IoT
 
-Dashboard lokal dengan backend Python dan file JSONL harian. Python 3.9+; tanpa instalasi paket.
+Dashboard lokal dengan backend Python dan file JSONL harian. Python 3.9+ (terbaru); tanpa instalasi paket.
 
 ## Jalankan
 
