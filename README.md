@@ -1,4 +1,4 @@
-# WARON IoT
+# WARON IoT (CI/CD)
 
 Dashboard lokal dengan backend Python dan file JSONL harian. Python 3.9+ (terbaru); tanpa instalasi paket
 
